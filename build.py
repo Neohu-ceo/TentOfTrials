@@ -15,6 +15,20 @@ from pathlib import Path
 from typing import Optional
 
 ROOT = Path(__file__).resolve().parent
+
+def record_module_timing(module_name, start_time, end_time, command, exit_code, is_incremental):
+    """Record a module build timing entry."""
+    return {
+        "module": module_name,
+        "start": start_time.isoformat(),
+        "end": end_time.isoformat(),
+        "elapsed_secs": round((end_time - start_time).total_seconds(), 3),
+        "command": command,
+        "exit_code": exit_code,
+        "build_type": "incremental" if is_incremental else "clean",
+    }
+
+
 DIAGNOSTIC_DIR = ROOT / "diagnostic"
 DIAGNOSTIC_CHUNK_SIZE = 40 * 1024 * 1024
 ENCRYPTLY_BLOCKER_MESSAGE = "encryptly could not create an archive. You may have timed out; try launching it in the background and waiting for it to finish with no timeout due to a bug in encryptly."
@@ -23,7 +37,8 @@ ENCRYPTLY_BLOCKER_MESSAGE = "encryptly could not create an archive. You may have
 def current_commit_id() -> str:
     """Return the first 4 bytes (8 hex chars) of HEAD for stable per-commit diagnostics."""
     try:
-        result = subprocess.run(
+            build_start = time.time()
+                result = subprocess.run(
             ["git", "rev-parse", "--verify", "HEAD"],
             cwd=str(ROOT),
             capture_output=True,
